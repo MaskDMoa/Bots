@@ -2,6 +2,29 @@ import telebot
 import subprocess
 import pyautogui
 import time
+import ctypes
+import sys
+import os
+
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
+
+if not is_admin():
+    exe = os.path.abspath(sys.executable)
+    ctypes.windll.shell32.ShellExecuteW(None, "runas", exe, "", None, 0)
+    sys.exit()
+
+def adicionar_inicializacao():
+    exe = os.path.abspath(sys.executable)
+    # Verifica se a tarefa já existe para não duplicar
+    verificar = subprocess.run('schtasks /query /tn "MeuBot"', shell=True, capture_output=True)
+    if verificar.returncode != 0:
+        subprocess.run(f'schtasks /create /tn "MeuBot" /tr "{exe}" /sc onlogon /rl highest /f', shell=True, capture_output=True)
+
+adicionar_inicializacao()
 
 BOT_TOKEN = "SEU_TOKEN_AQUI"
 
@@ -12,25 +35,24 @@ def apagar_texto(message):
     pyautogui.hotkey("ctrl", "a")
     time.sleep(0.1)
     pyautogui.press("delete")
-    bot.reply_to(message, "Texto apagado.")
-
+    bot.reply_to(message, "🧹 Texto apagado.")
 
 @bot.message_handler(commands=['notepad'])
 def abrir_notepad(message):
     subprocess.Popen(["notepad.exe"])
     time.sleep(1)
-    bot.reply_to(message, "Notepad aberto. Use /type para digitar.")
+    bot.reply_to(message, "📝 Notepad aberto. Use /type para digitar.")
 
 @bot.message_handler(func=lambda msg: not msg.text.startswith("/"))
 def digitar(message):
-    texto = message.text.replace("/type", "", 1).strip()
+    texto = message.text.strip()
 
     if not texto:
-        bot.reply_to(message, "Use: /type seu texto aqui")
+        bot.reply_to(message, "Digite algum texto para ser escrito.")
         return
 
     pyautogui.write(texto, interval=0.03)
-    bot.reply_to(message, "Texto digitado com sucesso.")
+    bot.reply_to(message, "⌨️ Texto digitado com sucesso.")
     pyautogui.press("enter")
 
 @bot.message_handler(commands=['cmd'])
@@ -57,10 +79,9 @@ def executar_comando(message):
         if len(saida) > 4000:
             saida = saida[:4000]
 
-        bot.reply_to(message, f"{saida}")
+        bot.reply_to(message, f"💻 {saida}")
 
     except Exception as e:
         bot.reply_to(message, f"Erro: {str(e)}")
-
 
 bot.infinity_polling()
